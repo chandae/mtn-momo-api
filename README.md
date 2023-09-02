@@ -1,7 +1,7 @@
 # MTN MoMo API
 ## Production Python Module
 
-The MTN MoMo API host is https://proxy.momoapi.mtn.com. Check the various endpoints in the document at https://momoapi.mtn.com/docs/services/collection/operations/bc-authorize-POST
+You need production credentials (Subscription key, API User ID, API User Key). The MTN MoMo API host is https://proxy.momoapi.mtn.com. Check the various endpoints in the document at https://momoapi.mtn.com/docs/services/collection/operations/bc-authorize-POST
 
 <br />
 
@@ -18,8 +18,14 @@ $ git clone <repo_url>
 <br />
 
 ## Create a virtual environment
-Create a virtual environment for this project
+Create a virtual environment for this project. Ensure that you have the virtualenv module. Run:
+```bash
+$ # create virtual environment
+$ virtualenv .venv
+```
+> .venv is the name of the virtual environment. Feel free to use a different name.
 
+<br />
 
 Activate the virtual environment with:
 ```bash
@@ -43,3 +49,5 @@ Create a .env file in the root directory of the project. In the file, add the fo
 1. USERNAME
 2. PASSWORD
 3. SUBSCRIPTION KEY
+
+## READY TO USE API

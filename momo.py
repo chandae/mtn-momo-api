@@ -3,95 +3,124 @@ import json
 import  uuid
 from basicauth import encode
 from decouple import config
+import time
 
-_hostname  = "https://proxy.momoapi.mtn.com"
-_username  = config("USERNAME", cast=str)
-_password  = config("PASSWORD", cast=str)
+class MomoPaymentRequest:
+    """ MTN MoMo API For Production Testing """
 
-_subscription_key = config("SUBSCRIPTION_KEY", cast=str)
+    _hostname  = "https://proxy.momoapi.mtn.com"
+    _username  = config("USERNAME", cast=str)
+    _password  = config("PASSWORD", cast=str)
+    _subscription_key = config("SUBSCRIPTION_KEY", cast=str)
 
-def generate_access_token():
-    """Generate momo api access token to be used to authenticate other endpoints """
-    basic_auth = str(encode(_username, _password))
+    def __init__(self, amount, phone_number, currency, payer_msg, id=None) -> None:
+        if id:
+            self.id = id
+        else:
+            self.id = str(uuid.uuid4())
+        
+        self.amount = amount
+        self.phone_number = phone_number
+        self.currency = currency
+        self.payer_msg = payer_msg
 
-    headers = {
-        'Authorization': basic_auth,
-        'Ocp-Apim-Subscription-Key': _subscription_key,
-    }
+    def __basic_auth(self):
+        return str(encode(self._username, self._password))
 
-    url = f"{_hostname}/collection/token/"
+    def __access_token(self):
+        """Generate momo api access token to be used to authenticate other endpoints """
+        url = f"{self._hostname}/collection/token/"
 
-    try:
-        response = requests.request("POST", url, headers=headers, data={})
-        auth_token = response.json()['access_token']
+        headers = {
+            'Authorization': self.__basic_auth(),
+            'Ocp-Apim-Subscription-Key': self._subscription_key,
+        }
+
+        try:
+            response = requests.request("POST", url, headers=headers, data={})
+            print(response.status_code)
+            print(response.reason)
+
+            if (response.status_code == 200 or response.status_code == 202):
+                auth_token = response.json()['access_token']
+                print(auth_token)
+                return auth_token
+            
+            # method failed
+            return None
+        except Exception as e:
+            print(f"[Errno] {e}")
+            return None
+
+    def send(self):
+        reference_id = self.id
+        access_token = self.__access_token()
+
+        if not access_token:
+            print("request failed")
+            return "Request failed."
+        
+        authorization = f"Bearer {access_token}"
+
+        payload = json.dumps({
+            "amount": self.amount,
+            "currency": self.currency,
+            "externalId": "12345",
+            "payer": {
+                "partyIdType": "MSISDN",
+                "partyId": self.phone_number
+            },
+            "payerMessage": self.payer_msg,
+            "payeeNote": self.payer_msg
+        })
+
+        url = f"{self._hostname}/collection/v1_0/requesttopay"
+
+        headers = {
+            'X-Reference-Id': reference_id,
+            'X-Target-Environment': 'mtnzambia', 
+            'Ocp-Apim-Subscription-Key': self._subscription_key,
+            'Authorization': authorization,
+        }
+
+        response = requests.post(url, headers=headers, data=payload)
+
+        print(f"Reference ID: {reference_id}")
         print(response.status_code)
-        print(auth_token)
-        return auth_token
-    except Exception as e:
-        print(f"[Errno] {e}")
-        return None
+        if (response.status_code == 200 or response.status_code == 202):
+            print(response.reason)
+            pass
+        
+    def payment_status(self, reference_id):
+        error_msg = "Failed to generate access token"
+        access_token = self.__access_token()
 
-def request_to_pay(phone_number, amount, payer_message):
-    reference_id = str(uuid.uuid4())
-    access_token = generate_access_token()
-
-    if not access_token:
-        print("request failed")
-        return "Request failed."
+        if access_token:
+            print(error_msg)
+            return error_msg
     
-    authorization = f"Bearer {access_token}"
+        authorization = f"Bearer {access_token}"
 
-    payload = json.dumps({
-        "amount": amount,
-        "currency": "ZMW",
-        "externalId": "12345",
-        "payer": {
-            "partyIdType": "MSISDN",
-            "partyId": phone_number
-        },
-        "payerMessage": payer_message,
-        "payeeNote": payer_message
-    })
+        headers = {
+            'X-Target-Environment': 'mtnzambia', 
+            'Ocp-Apim-Subscription-Key': self._subscription_key,
+            'Authorization': authorization
+        }
 
-    url = f"{_hostname}/collection/v1_0/requesttopay"
+        url = f"{self._hostname}/collection/v1_0/requesttopay/{reference_id}"
 
-    headers = {
-        'X-Reference-Id': reference_id,
-        'X-Target-Environment': 'mtnzambia', 
-        'Ocp-Apim-Subscription-Key': _subscription_key,
-        'Authorization': authorization,
-    }
+        response = requests.get(url, headers=headers)
 
-    response = requests.post(url, headers=headers, data=payload)
-
-    print(f"Reference ID: {reference_id}")
-    print(response.status_code)
-    if (response.status_code == 200 or response.status_code == 202):
+        print(response.status_code)
         print(response.reason)
-
-def payment_status(reference_id):
-    access_token = generate_access_token()
-    authorization = f"Bearer {access_token}"
-
-    headers = {
-        'X-Target-Environment': 'mtnzambia', 
-        'Ocp-Apim-Subscription-Key': _subscription_key,
-        'Authorization': authorization
-    }
-
-    url = f"{_hostname}/collection/v1_0/requesttopay/{reference_id}"
-
-    response = requests.get(url, headers=headers)
-    print(response.status_code)
-    if response.status_code == 202 or response.status_code:
-        print(response.reason)
-        print(response.json())
-
+        if response.status_code == 202 or response.status_code:
+            print(response.reason)
+            print(response.json())
 
 if __name__ == "__main__":
-    payer_number = "0761423699"
-    reference_id = "c9b28b44-7943-4f53-a421-07502e162d9e"
+    payer_number = "260761423699"
 
-    # request_to_pay("260761423699", "5", "demo payment")
-    payment_status(reference_id)
-
+    req = MomoPaymentRequest("1", payer_number, "ZMW", "test payment 1")
+    req.send()
+    time.sleep(10)
+    req.payment_status(req.id)
