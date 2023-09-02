@@ -118,9 +118,9 @@ class MomoPaymentRequest:
             print(response.json())
 
 if __name__ == "__main__":
-    payer_number = "260761423699"
+    payer_number = ""
 
-    req = MomoPaymentRequest("1", payer_number, "ZMW", "test payment 3")
+    req = MomoPaymentRequest("1", payer_number, "ZMW", "test payment")
     req.send()
     time.sleep(25)
     req.payment_status()

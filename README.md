@@ -6,13 +6,14 @@ You need production credentials (Subscription key, API User ID, API User Key). T
 <br />
 
 ## Download project
-Download/clone this repository with:
+Download/clone this repository with the commands below and navigate to root of the project:
 
 > Make sure you have git installed and configured
 
 ```bash
 $ # clone repository
-$ git clone <repo_url>
+$ git clone https://github.com/chandae/mtn-momo-dev.git
+$ cd momo-api-dev
 ```
 
 <br />
@@ -51,3 +52,15 @@ Create a .env file in the root directory of the project. In the file, add the fo
 3. SUBSCRIPTION KEY
 
 ## READY TO USE API
+
+Example:
+```python
+if __name__ == "__main__":
+    # use actual mtn momo number here
+    payer_number = ""
+
+    req = MomoPaymentRequest("1", payer_number, "ZMW", "test payment")
+    req.send()
+    time.sleep(25)
+    req.payment_status()
+```
