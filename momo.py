@@ -8,10 +8,10 @@ import time
 class MomoPaymentRequest:
     """ MTN MoMo API For Production Testing """
 
-    _hostname  = "https://proxy.momoapi.mtn.com"
-    _username  = config("USERNAME", cast=str)
-    _password  = config("PASSWORD", cast=str)
-    _subscription_key = config("SUBSCRIPTION_KEY", cast=str)
+    __hostname  = "https://proxy.momoapi.mtn.com"
+    __username  = config("USERNAME", cast=str)
+    __password  = config("PASSWORD", cast=str)
+    __subscription_key = config("SUBSCRIPTION_KEY", cast=str)
 
     def __init__(self, amount, phone_number, currency, payer_msg, id=None) -> None:
         if id:
@@ -25,15 +25,15 @@ class MomoPaymentRequest:
         self.payer_msg = payer_msg
 
     def __basic_auth(self):
-        return str(encode(self._username, self._password))
+        return str(encode(self.__username, self.__password))
 
     def __access_token(self):
         """Generate momo api access token to be used to authenticate other endpoints """
-        url = f"{self._hostname}/collection/token/"
+        url = f"{self.__hostname}/collection/token/"
 
         headers = {
             'Authorization': self.__basic_auth(),
-            'Ocp-Apim-Subscription-Key': self._subscription_key,
+            'Ocp-Apim-Subscription-Key': self.__subscription_key,
         }
 
         try:
@@ -74,12 +74,12 @@ class MomoPaymentRequest:
             "payeeNote": self.payer_msg
         })
 
-        url = f"{self._hostname}/collection/v1_0/requesttopay"
+        url = f"{self.__hostname}/collection/v1_0/requesttopay"
 
         headers = {
             'X-Reference-Id': reference_id,
             'X-Target-Environment': 'mtnzambia', 
-            'Ocp-Apim-Subscription-Key': self._subscription_key,
+            'Ocp-Apim-Subscription-Key': self.__subscription_key,
             'Authorization': authorization,
         }
 
@@ -91,11 +91,11 @@ class MomoPaymentRequest:
             print(response.reason)
             pass
         
-    def payment_status(self, reference_id):
+    def payment_status(self):
         error_msg = "Failed to generate access token"
         access_token = self.__access_token()
 
-        if access_token:
+        if not access_token:
             print(error_msg)
             return error_msg
     
@@ -103,11 +103,11 @@ class MomoPaymentRequest:
 
         headers = {
             'X-Target-Environment': 'mtnzambia', 
-            'Ocp-Apim-Subscription-Key': self._subscription_key,
+            'Ocp-Apim-Subscription-Key': self.__subscription_key,
             'Authorization': authorization
         }
 
-        url = f"{self._hostname}/collection/v1_0/requesttopay/{reference_id}"
+        url = f"{self.__hostname}/collection/v1_0/requesttopay/{self.id}"
 
         response = requests.get(url, headers=headers)
 
@@ -120,7 +120,7 @@ class MomoPaymentRequest:
 if __name__ == "__main__":
     payer_number = "260761423699"
 
-    req = MomoPaymentRequest("1", payer_number, "ZMW", "test payment 1")
+    req = MomoPaymentRequest("1", payer_number, "ZMW", "test payment 3")
     req.send()
-    time.sleep(10)
-    req.payment_status(req.id)
+    time.sleep(25)
+    req.payment_status()
